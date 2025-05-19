@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>leet</title></title>
+  <title>leet</title>
   <style>
     body {
       background-color: black;
@@ -64,7 +64,6 @@
       const length = Math.min(6 + level, 10);
 
       sequence = [start];
-
       for (let i = 1; i < length; i++) {
         const next = isGeometric
           ? sequence[i - 1] * modifier
@@ -83,6 +82,19 @@
       document.getElementById("levelDisplay").textContent = level;
       document.getElementById("result").textContent = "";
       document.getElementById("flagDisplay").textContent = "";
+
+      // Add enter key listener
+      setTimeout(() => {
+        const input = document.getElementById("userInput");
+        if (input) {
+          input.focus();
+          input.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+              checkAnswer();
+            }
+          });
+        }
+      }, 100);
     }
 
     function generateFlag(level) {
@@ -92,7 +104,8 @@
     }
 
     function checkAnswer() {
-      const userVal = parseInt(document.getElementById('userInput').value);
+      const userInput = document.getElementById('userInput');
+      const userVal = parseInt(userInput.value);
       const result = document.getElementById('result');
       const flag = document.getElementById('flagDisplay');
 
