@@ -2,43 +2,116 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LEET - Domain Hijack Confirmed</title>
+  <title>Hacker Pattern Solver</title>
   <style>
     body {
       background-color: black;
-      color: #00ff00;
-      font-family: monospace;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
+      color: #00FF00;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
     }
-    h1 {
-      font-size: 3em;
-      text-shadow: 0 0 10px #00ff00;
+    .pattern {
+      font-size: 24px;
+      margin-bottom: 10px;
     }
-    p {
-      font-size: 1.2em;
-      margin-top: 20px;
-      color: #0aff0a;
-    }
-    #flag {
-      margin-top: 40px;
+    .result, .flag {
+      margin-top: 10px;
       font-weight: bold;
-      background-color: #111;
-      padding: 10px 20px;
-      border: 2px solid #00ff00;
-      border-radius: 10px;
-      box-shadow: 0 0 5px #00ff00;
+    }
+    .flag {
+      font-size: 18px;
+      color: #00FF00;
+    }
+    input[type="number"] {
+      width: 80px;
+      padding: 5px;
+      font-size: 18px;
+      background-color: #003300;
+      color: #00FF00;
+      border: 1px solid #00FF00;
+    }
+    button {
+      padding: 6px 12px;
+      font-size: 16px;
+      background-color: #002200;
+      color: #00FF00;
+      border: 1px solid #00FF00;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #004400;
     }
   </style>
 </head>
 <body>
-  <h1>✔ DOMAIN HIJACKED</h1>
-  <p>This site is now under control of <strong>cb4$h</strong>.</p>
-  <div id="flag">flag{leet_takeover_verified}</div>
+
+  <h2>🧠 Level <span id="levelDisplay">1</span>: Solve the Pattern</h2>
+  <div class="pattern" id="patternDisplay"></div>
+  <button onclick="checkAnswer()">Submit</button>
+  <div class="result" id="result"></div>
+  <div class="flag" id="flagDisplay"></div>
+
+  <script>
+    let sequence = [];
+    let correctAnswer;
+    let missingIndex;
+    let level = 1;
+
+    function generatePattern() {
+      const start = Math.floor(Math.random() * 5) + 2;
+      const isGeometric = level % 2 === 0;
+      const modifier = Math.floor(level / 2) + 2;
+      const length = Math.min(6 + level, 10);
+
+      sequence = [start];
+
+      for (let i = 1; i < length; i++) {
+        const next = isGeometric
+          ? sequence[i - 1] * modifier
+          : sequence[i - 1] + modifier;
+        sequence.push(next);
+      }
+
+      missingIndex = Math.floor(Math.random() * (length - 2)) + 1;
+      correctAnswer = sequence[missingIndex];
+
+      const display = sequence.map((val, idx) =>
+        idx === missingIndex ? `<input type="number" id="userInput">` : val
+      ).join(", ");
+
+      document.getElementById("patternDisplay").innerHTML = display;
+      document.getElementById("levelDisplay").textContent = level;
+      document.getElementById("result").textContent = "";
+      document.getElementById("flagDisplay").textContent = "";
+    }
+
+    function generateFlag(level) {
+      const base = "FLAG{LEVEL_";
+      const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+      return `${base}${level}_${suffix}}`;
+    }
+
+    function checkAnswer() {
+      const userVal = parseInt(document.getElementById('userInput').value);
+      const result = document.getElementById('result');
+      const flag = document.getElementById('flagDisplay');
+
+      if (userVal === correctAnswer) {
+        result.textContent = "✅ Correct! Leveling up...";
+        result.style.color = "#00FF00";
+        const newFlag = generateFlag(level);
+        flag.textContent = `🎉 FLAG UNLOCKED: ${newFlag}`;
+        level++;
+      } else {
+        result.textContent = `❌ Incorrect. Correct answer: ${correctAnswer}. Try again.`;
+        result.style.color = "red";
+      }
+
+      setTimeout(generatePattern, 4000);
+    }
+
+    generatePattern();
+  </script>
+
 </body>
 </html>
