@@ -12,7 +12,7 @@
       padding: 20px;
     }
     .hidden { display: none; }
-    .pattern, .result, .flag {
+    .pattern, .result, .flag, .lives, .score {
       font-size: 20px;
       margin-top: 10px;
     }
@@ -32,6 +32,7 @@
       border: 1px solid #00FF00;
       cursor: pointer;
       margin-right: 10px;
+      margin-bottom: 5px;
     }
     button:hover {
       background-color: #004400;
@@ -39,15 +40,21 @@
   </style>
 </head>
 <body>
-
-  <div id="homeScreen">
-    <h1>🧠 Welcome to LEET</h1>
-    <button onclick="startGame()">Start Game</button>
+  <div id="startScreen">
+    <h2>leet</h2>
+    <p>Select Difficulty:</p>
+    <button onclick="startGame('Peaceful', Infinity, 1)">Peaceful(∞ lives)</button><br>
+    <button onclick="startGame('Easy', 8, 1)">Easy  (8 lives)</button><br>
+    <button onclick="startGame('Medium', 5, 2)">Medium (5 lives)</button><br>
+    <button onclick="startGame('Hard', 3, 3)">Hard  (3 lives)</button><br>
+    <button onclick="startGame('Veteran', 1, 5)">Veteran 💀 (1 life)</button>
   </div>
 
   <div id="gameScreen" class="hidden">
-    <h2>🧠 Level <span id="levelDisplay">1</span>: Solve the Pattern</h2>
+    <h2>🧠 Level <span id="levelDisplay">1</span> - <span id="difficultyDisplay"></span></h2>
     <div class="pattern" id="patternDisplay"></div>
+    <div class="lives">Lives: <span id="livesDisplay"></span></div>
+    <div class="score">Flags: <span id="flagsDisplay">0</span></div>
     <button onclick="checkAnswer()">Submit</button>
     <button onclick="quitGame()">Quit Game</button>
     <div class="result" id="result"></div>
@@ -55,19 +62,27 @@
   </div>
 
   <script>
-    let sequence = [];
-    let correctAnswer;
-    let missingIndex;
-    let level = 1;
+    let level = 1, lives, difficulty, multiplier, sequence = [], correctAnswer, missingIndex;
     let flags = JSON.parse(localStorage.getItem("flags")) || [];
 
-    function startGame() {
+    function startGame(diff, lifeCount, multi) {
+      difficulty = diff;
+      lives = lifeCount;
+      multiplier = multi;
       level = 1;
       flags = [];
       localStorage.setItem("flags", JSON.stringify(flags));
-      document.getElementById("homeScreen").classList.add("hidden");
+      document.getElementById("startScreen").classList.add("hidden");
       document.getElementById("gameScreen").classList.remove("hidden");
+      document.getElementById("difficultyDisplay").textContent = difficulty;
+      updateUI();
       generatePattern();
+    }
+
+    function updateUI() {
+      document.getElementById("levelDisplay").textContent = level;
+      document.getElementById("livesDisplay").textContent = lives === Infinity ? '∞' : lives;
+      document.getElementById("flagsDisplay").textContent = flags.length;
     }
 
     function generatePattern() {
@@ -78,21 +93,15 @@
 
       sequence = [start];
       for (let i = 1; i < length; i++) {
-        const next = isGeometric
-          ? sequence[i - 1] * modifier
-          : sequence[i - 1] + modifier;
-        sequence.push(next);
+        sequence.push(isGeometric ? sequence[i - 1] * modifier : sequence[i - 1] + modifier);
       }
 
       missingIndex = Math.floor(Math.random() * (length - 2)) + 1;
       correctAnswer = sequence[missingIndex];
 
-      const display = sequence.map((val, idx) =>
-        idx === missingIndex ? `<input type="number" id="userInput">` : val
-      ).join(", ");
+      const display = sequence.map((val, idx) => idx === missingIndex ? `<input type="number" id="userInput">` : val).join(", ");
 
       document.getElementById("patternDisplay").innerHTML = display;
-      document.getElementById("levelDisplay").textContent = level;
       document.getElementById("result").textContent = "";
       document.getElementById("flagDisplay").textContent = "";
 
@@ -107,7 +116,7 @@
       }, 100);
     }
 
-    function generateFlag(level) {
+    function generateFlag() {
       const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
       const flag = `FLAG{LEVEL_${level}_${suffix}}`;
       flags.push(flag);
@@ -124,35 +133,38 @@
       if (userVal === correctAnswer) {
         result.textContent = "✅ Correct! Leveling up...";
         result.style.color = "#00FF00";
-        const newFlag = generateFlag(level);
+        const newFlag = generateFlag();
         flag.textContent = `🎉 FLAG UNLOCKED: ${newFlag}`;
         level++;
 
         if (level > 255) {
-          alert("🎯 MAX LEVEL REACHED!\nRedeeming Points...");
-          returnToHome();
+          endGame("🎯 MAX LEVEL REACHED!");
           return;
         }
-
-        setTimeout(generatePattern, 4000);
       } else {
-        result.textContent = `❌ Incorrect. Correct answer: ${correctAnswer}. Returning to home...`;
+        result.textContent = `❌ Incorrect. Correct: ${correctAnswer}`;
         result.style.color = "red";
-        setTimeout(returnToHome, 4000);
+        if (lives !== Infinity) lives--;
+        if (lives === 0) {
+          endGame("💀 Game Over");
+          return;
+        }
       }
+
+      updateUI();
+      setTimeout(generatePattern, 3000);
     }
 
     function quitGame() {
-      const totalPoints = flags.length * 10;
-      alert(`🛑 Game Over\nFlags Collected: ${flags.length}\nTotal Points: ${totalPoints}`);
-      returnToHome();
+      endGame("🛑 Game Quit");
     }
 
-    function returnToHome() {
+    function endGame(message) {
+      const totalPoints = flags.length * 10 * multiplier;
+      alert(`${message}\nFlags: ${flags.length}\nPoints: ${totalPoints}`);
       document.getElementById("gameScreen").classList.add("hidden");
-      document.getElementById("homeScreen").classList.remove("hidden");
+      document.getElementById("startScreen").classList.remove("hidden");
     }
   </script>
-
 </body>
 </html>
