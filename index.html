@@ -11,17 +11,10 @@
       font-family: 'Courier New', monospace;
       padding: 20px;
     }
-    .pattern {
-      font-size: 24px;
-      margin-bottom: 10px;
-    }
-    .result, .flag {
+    .hidden { display: none; }
+    .pattern, .result, .flag {
+      font-size: 20px;
       margin-top: 10px;
-      font-weight: bold;
-    }
-    .flag {
-      font-size: 18px;
-      color: #00FF00;
     }
     input[type="number"] {
       width: 80px;
@@ -47,12 +40,19 @@
 </head>
 <body>
 
-  <h2>🧠 Level <span id="levelDisplay">1</span>: Solve the Pattern</h2>
-  <div class="pattern" id="patternDisplay"></div>
-  <button onclick="checkAnswer()">Submit</button>
-  <button onclick="quitGame()">Quit Game</button>
-  <div class="result" id="result"></div>
-  <div class="flag" id="flagDisplay"></div>
+  <div id="homeScreen">
+    <h1>🧠 Welcome to LEET</h1>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <div id="gameScreen" class="hidden">
+    <h2>🧠 Level <span id="levelDisplay">1</span>: Solve the Pattern</h2>
+    <div class="pattern" id="patternDisplay"></div>
+    <button onclick="checkAnswer()">Submit</button>
+    <button onclick="quitGame()">Quit Game</button>
+    <div class="result" id="result"></div>
+    <div class="flag" id="flagDisplay"></div>
+  </div>
 
   <script>
     let sequence = [];
@@ -60,6 +60,15 @@
     let missingIndex;
     let level = 1;
     let flags = JSON.parse(localStorage.getItem("flags")) || [];
+
+    function startGame() {
+      level = 1;
+      flags = [];
+      localStorage.setItem("flags", JSON.stringify(flags));
+      document.getElementById("homeScreen").classList.add("hidden");
+      document.getElementById("gameScreen").classList.remove("hidden");
+      generatePattern();
+    }
 
     function generatePattern() {
       const start = Math.floor(Math.random() * 5) + 2;
@@ -87,15 +96,12 @@
       document.getElementById("result").textContent = "";
       document.getElementById("flagDisplay").textContent = "";
 
-      // Focus input and allow Enter key to submit
       setTimeout(() => {
         const input = document.getElementById("userInput");
         if (input) {
           input.focus();
           input.addEventListener("keydown", function (e) {
-            if (e.key === "Enter") {
-              checkAnswer();
-            }
+            if (e.key === "Enter") checkAnswer();
           });
         }
       }, 100);
@@ -124,32 +130,28 @@
 
         if (level > 255) {
           alert("🎯 MAX LEVEL REACHED!\nRedeeming Points...");
-          quitGame();
+          returnToHome();
           return;
         }
-      } else {
-        result.textContent = `❌ Incorrect. Correct answer: ${correctAnswer}. Try again.`;
-        result.style.color = "red";
-      }
 
-      setTimeout(generatePattern, 4000);
+        setTimeout(generatePattern, 4000);
+      } else {
+        result.textContent = `❌ Incorrect. Correct answer: ${correctAnswer}. Returning to home...`;
+        result.style.color = "red";
+        setTimeout(returnToHome, 4000);
+      }
     }
 
     function quitGame() {
       const totalPoints = flags.length * 10;
       alert(`🛑 Game Over\nFlags Collected: ${flags.length}\nTotal Points: ${totalPoints}`);
-      disableGame();
+      returnToHome();
     }
 
-    function disableGame() {
-      document.getElementById("patternDisplay").innerHTML = "GAME TERMINATED.";
-      const input = document.getElementById("userInput");
-      if (input) input.setAttribute("disabled", true);
-      document.querySelector("button[onclick='checkAnswer()']").disabled = true;
-      document.querySelector("button[onclick='quitGame()']").disabled = true;
+    function returnToHome() {
+      document.getElementById("gameScreen").classList.add("hidden");
+      document.getElementById("homeScreen").classList.remove("hidden");
     }
-
-    generatePattern();
   </script>
 
 </body>
