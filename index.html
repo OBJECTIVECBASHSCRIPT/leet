@@ -11,10 +11,17 @@
       font-family: 'Courier New', monospace;
       padding: 20px;
     }
-    .hidden { display: none; }
-    .pattern, .result, .flag, .lives, .score {
-      font-size: 20px;
+    .pattern {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .result, .flag {
       margin-top: 10px;
+      font-weight: bold;
+    }
+    .flag {
+      font-size: 18px;
+      color: #00FF00;
     }
     input[type="number"] {
       width: 80px;
@@ -39,50 +46,20 @@
   </style>
 </head>
 <body>
-  <div id="startScreen">
-    <h2>leet</h2>
-    <p>Select Difficulty:</p>
-    <button onclick="startGame('Peaceful', Infinity, 1)">Peaceful</button>
-    <button onclick="startGame('Easy', 8, 1)">Easy</button>
-    <button onclick="startGame('Medium', 5, 2)">Medium</button>
-    <button onclick="startGame('Hard', 3, 3)">Hard</button>
-    <button onclick="startGame('Veteran', 1, 5)">Veteran</button>
-  </div>
 
-  <div id="gameScreen" class="hidden">
-    <h2>🧠 Level <span id="levelDisplay">1</span> - <span id="difficultyDisplay"></span></h2>
-    <div class="pattern" id="patternDisplay"></div>
-    <div class="lives">Lives: <span id="livesDisplay"></span></div>
-    <div class="score">Flags: <span id="flagsDisplay">0</span></div>
-    <button onclick="checkAnswer()">Submit</button>
-    <button onclick="quitGame()">Quit Game</button>
-    <div class="result" id="result"></div>
-    <div class="flag" id="flagDisplay"></div>
-  </div>
+  <h2>🧠 Level <span id="levelDisplay">1</span>: Solve the Pattern</h2>
+  <div class="pattern" id="patternDisplay"></div>
+  <button onclick="checkAnswer()">Submit</button>
+  <button onclick="quitGame()">Quit Game</button>
+  <div class="result" id="result"></div>
+  <div class="flag" id="flagDisplay"></div>
 
   <script>
-    let level = 1, lives, difficulty, multiplier, sequence = [], correctAnswer, missingIndex;
+    let sequence = [];
+    let correctAnswer;
+    let missingIndex;
+    let level = 1;
     let flags = JSON.parse(localStorage.getItem("flags")) || [];
-
-    function startGame(diff, lifeCount, multi) {
-      difficulty = diff;
-      lives = lifeCount;
-      multiplier = multi;
-      level = 1;
-      flags = [];
-      localStorage.setItem("flags", JSON.stringify(flags));
-      document.getElementById("startScreen").classList.add("hidden");
-      document.getElementById("gameScreen").classList.remove("hidden");
-      document.getElementById("difficultyDisplay").textContent = difficulty;
-      updateUI();
-      generatePattern();
-    }
-
-    function updateUI() {
-      document.getElementById("levelDisplay").textContent = level;
-      document.getElementById("livesDisplay").textContent = lives === Infinity ? '∞' : lives;
-      document.getElementById("flagsDisplay").textContent = flags.length;
-    }
 
     function generatePattern() {
       const start = Math.floor(Math.random() * 5) + 2;
@@ -92,30 +69,39 @@
 
       sequence = [start];
       for (let i = 1; i < length; i++) {
-        sequence.push(isGeometric ? sequence[i - 1] * modifier : sequence[i - 1] + modifier);
+        const next = isGeometric
+          ? sequence[i - 1] * modifier
+          : sequence[i - 1] + modifier;
+        sequence.push(next);
       }
 
       missingIndex = Math.floor(Math.random() * (length - 2)) + 1;
       correctAnswer = sequence[missingIndex];
 
-      const display = sequence.map((val, idx) => idx === missingIndex ? `<input type="number" id="userInput">` : val).join(", ");
+      const display = sequence.map((val, idx) =>
+        idx === missingIndex ? `<input type="number" id="userInput">` : val
+      ).join(", ");
 
       document.getElementById("patternDisplay").innerHTML = display;
+      document.getElementById("levelDisplay").textContent = level;
       document.getElementById("result").textContent = "";
       document.getElementById("flagDisplay").textContent = "";
 
+      // Focus input and allow Enter key to submit
       setTimeout(() => {
         const input = document.getElementById("userInput");
         if (input) {
           input.focus();
           input.addEventListener("keydown", function (e) {
-            if (e.key === "Enter") checkAnswer();
+            if (e.key === "Enter") {
+              checkAnswer();
+            }
           });
         }
       }, 100);
     }
 
-    function generateFlag() {
+    function generateFlag(level) {
       const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
       const flag = `FLAG{LEVEL_${level}_${suffix}}`;
       flags.push(flag);
@@ -132,37 +118,39 @@
       if (userVal === correctAnswer) {
         result.textContent = "✅ Correct! Leveling up...";
         result.style.color = "#00FF00";
-        const newFlag = generateFlag();
+        const newFlag = generateFlag(level);
         flag.textContent = `🎉 FLAG UNLOCKED: ${newFlag}`;
         level++;
 
         if (level > 255) {
-          alert(`🎯 MAX LEVEL REACHED!\nTotal Flags: ${flags.length}\nPoints: ${flags.length * 10 * multiplier}`);
+          alert("🎯 MAX LEVEL REACHED!\nRedeeming Points...");
           quitGame();
           return;
         }
       } else {
-        result.textContent = `❌ Incorrect. Correct: ${correctAnswer}`;
+        result.textContent = `❌ Incorrect. Correct answer: ${correctAnswer}. Try again.`;
         result.style.color = "red";
-        if (lives !== Infinity) lives--;
-        if (lives === 0) {
-          alert(`💀 Game Over\nFlags: ${flags.length}\nPoints: ${flags.length * 10 * multiplier}`);
-          quitGame();
-          return;
-        }
       }
 
-      updateUI();
-      setTimeout(generatePattern, 3000);
+      setTimeout(generatePattern, 4000);
     }
 
     function quitGame() {
+      const totalPoints = flags.length * 10;
+      alert(`🛑 Game Over\nFlags Collected: ${flags.length}\nTotal Points: ${totalPoints}`);
+      disableGame();
+    }
+
+    function disableGame() {
       document.getElementById("patternDisplay").innerHTML = "GAME TERMINATED.";
       const input = document.getElementById("userInput");
       if (input) input.setAttribute("disabled", true);
       document.querySelector("button[onclick='checkAnswer()']").disabled = true;
       document.querySelector("button[onclick='quitGame()']").disabled = true;
     }
+
+    generatePattern();
   </script>
+
 </body>
 </html>
