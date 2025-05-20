@@ -76,7 +76,7 @@
     document.getElementById("gameScreen").classList.remove("hidden");
     document.getElementById("difficultyDisplay").textContent = difficulty;
     updateUI();
-    getAIPattern();  // 👈 use AI pattern instead of static
+    getAIPattern();
   }
 
   function updateUI() {
@@ -95,7 +95,7 @@
       }
 
       sequence = data.pattern.map(val => val === '?' ? null : val);
-      correctAnswer = sequence.find(val => val === null); // update this if you return answer directly
+      correctAnswer = sequence.find(val => val === null);
       missingIndex = sequence.indexOf(null);
 
       const display = sequence.map((val, idx) =>
@@ -157,7 +157,7 @@
     }
 
     updateUI();
-    setTimeout(getAIPattern, 3000); // 👈 load next AI pattern
+    setTimeout(getAIPattern, 3000);
   }
 
   function quitGame() {
@@ -170,120 +170,7 @@
     document.getElementById("gameScreen").classList.add("hidden");
     document.getElementById("startScreen").classList.remove("hidden");
   }
-
-  
-  
-  <script>
-  let level = 1, lives, difficulty, multiplier, sequence = [], correctAnswer, missingIndex;
-  let flags = JSON.parse(localStorage.getItem("flags")) || [];
-
-  function startGame(diff, lifeCount, multi) {
-    difficulty = diff;
-    lives = lifeCount;
-    multiplier = multi;
-    level = 1;
-    flags = [];
-    localStorage.setItem("flags", JSON.stringify(flags));
-    document.getElementById("startScreen").classList.add("hidden");
-    document.getElementById("gameScreen").classList.remove("hidden");
-    document.getElementById("difficultyDisplay").textContent = difficulty;
-    updateUI();
-    getAIPattern();  // 👈 use AI pattern instead of static
-  }
-
-  function updateUI() {
-    document.getElementById("levelDisplay").textContent = level;
-    document.getElementById("livesDisplay").textContent = lives === Infinity ? '∞' : lives;
-    document.getElementById("flagsDisplay").textContent = flags.length;
-  }
-
-  async function getAIPattern() {
-    try {
-      const res = await fetch('/generate-pattern');
-      const data = await res.json();
-
-      if (!data.pattern || !Array.isArray(data.pattern)) {
-        throw new Error("Invalid pattern returned.");
-      }
-
-      sequence = data.pattern.map(val => val === '?' ? null : val);
-      correctAnswer = sequence.find(val => val === null); // update this if you return answer directly
-      missingIndex = sequence.indexOf(null);
-
-      const display = sequence.map((val, idx) =>
-        idx === missingIndex ? `<input type="number" id="userInput">` : val
-      ).join(", ");
-
-      document.getElementById("patternDisplay").innerHTML = display;
-      document.getElementById("result").textContent = "";
-      document.getElementById("flagDisplay").textContent = "";
-
-      setTimeout(() => {
-        const input = document.getElementById("userInput");
-        if (input) {
-          input.focus();
-          input.addEventListener("keydown", function (e) {
-            if (e.key === "Enter") checkAnswer();
-          });
-        }
-      }, 100);
-    } catch (error) {
-      console.error("Error fetching AI pattern:", error);
-      document.getElementById("patternDisplay").textContent = "⚠️ Failed to load pattern.";
-    }
-  }
-
-  function generateFlag() {
-    const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const flag = `FLAG{LEVEL_${level}_${suffix}}`;
-    flags.push(flag);
-    localStorage.setItem("flags", JSON.stringify(flags));
-    return flag;
-  }
-
-  function checkAnswer() {
-    const userInput = document.getElementById('userInput');
-    const userVal = parseInt(userInput.value);
-    const result = document.getElementById('result');
-    const flag = document.getElementById('flagDisplay');
-
-    if (userVal === correctAnswer) {
-      result.textContent = "✅ Correct! Leveling up...";
-      result.style.color = "#00FF00";
-      const newFlag = generateFlag();
-      flag.textContent = `🎉 FLAG UNLOCKED: ${newFlag}`;
-      level++;
-
-      if (level > 255) {
-        endGame("🎯 MAX LEVEL REACHED!");
-        return;
-      }
-    } else {
-      result.textContent = `❌ Incorrect. Correct: ${correctAnswer}`;
-      result.style.color = "red";
-      if (lives !== Infinity) lives--;
-      if (lives === 0) {
-        endGame("💀 Game Over");
-        return;
-      }
-    }
-
-    updateUI();
-    setTimeout(getAIPattern, 3000); // 👈 load next AI pattern
-  }
-
-  function quitGame() {
-    endGame("🛑 Game Quit");
-  }
-
-  function endGame(message) {
-    const totalPoints = flags.length * 10 * multiplier;
-    alert(`${message}\nFlags: ${flags.length}\nPoints: ${totalPoints}`);
-    document.getElementById("gameScreen").classList.add("hidden");
-    document.getElementById("startScreen").classList.remove("hidden");
-  }
-  
 </script>
-</script>
+
 </body>
 </html>
