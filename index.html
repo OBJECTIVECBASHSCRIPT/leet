@@ -12,7 +12,7 @@
       padding: 20px;
     }
     .hidden { display: none; }
-    .pattern, .result, .flag, .lives, .score, #timer, #clock, #aiProgress {
+    .pattern, .result, .flag, .lives, .score, #timer, #clock, #aiProgressContainer {
       font-size: 20px;
       margin-top: 10px;
     }
@@ -37,6 +37,40 @@
     button:hover {
       background-color: #004400;
     }
+    /* Progress bar styles */
+    #aiProgressContainer {
+      width: 300px;
+      background: #222;
+      border: 1px solid #00FF00;
+      height: 25px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 15px;
+      margin-bottom: 10px;
+      display: none; /* Show only in AI Opponent mode */
+    }
+    #aiProgressBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00FF00 60%, #008800 100%);
+      transition: width 0.2s linear;
+    }
+    #aiProgressLabel {
+      color: #00FF00;
+      font-size: 16px;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 2px;
+      width: 100%;
+      text-align: center;
+      pointer-events: none;
+    }
+    .progress-wrap {
+      position: relative;
+      width: 300px;
+      height: 25px;
+    }
   </style>
 </head>
 <body>
@@ -45,9 +79,7 @@
     <p>Select Game Mode:</p>
     <button onclick="setOpponentMode('P1')">Player 1 (Solo)</button><br>
     <button onclick="setOpponentMode('P2')">Player 1 vs Player 2</button><br>
-    <button onclick="setOpponentMode('AI')">AI Only</button><br>
     <button onclick="setOpponentMode('AIopponent')">AI Opponent</button><br><br>
-
     <div id="difficultyOptions" class="hidden">
       <p>Select Difficulty:</p>
       <button onclick="startGame('Peaceful', Infinity, 1)">Peaceful(∞ lives)</button><br>
@@ -65,7 +97,11 @@
     <div class="score">Flags: <span id="flagsDisplay">0</span></div>
     <div id="clock">🕒 --:--:--</div>
     <div id="timer"></div>
-    <div id="aiProgress"></div>
+    <!-- Progress bar for AI -->
+    <div id="aiProgressContainer" class="progress-wrap">
+      <div id="aiProgressBar"></div>
+      <div id="aiProgressLabel"></div>
+    </div>
     <div>
       <div id="inputP1" class="hidden">Player 1: <input type="number" id="userInputP1"> <button onclick="checkAnswer(1)">Submit P1</button></div>
       <div id="inputP2" class="hidden">Player 2: <input type="number" id="userInputP2"> <button onclick="checkAnswer(2)">Submit P2</button></div>
@@ -85,7 +121,6 @@
   let aiInterval = null;
   let winner = null;
   let mode = "P1";
-
   // For P2 mode
   let livesP1 = 0, livesP2 = 0, flagsP1 = 0, flagsP2 = 0;
 
@@ -110,6 +145,7 @@
     document.getElementById("inputP1").classList.add("hidden");
     document.getElementById("inputP2").classList.add("hidden");
     document.getElementById("inputAI").classList.add("hidden");
+    document.getElementById("aiProgressContainer").style.display = "none";
 
     // Show relevant input sections
     if (mode === 'P1') {
@@ -119,11 +155,10 @@
       document.getElementById("inputP2").classList.remove("hidden");
       livesP1 = livesP2 = (lives === Infinity ? Infinity : lives);
       flagsP1 = flagsP2 = 0;
-    } else if (mode === 'AI') {
-      document.getElementById("inputAI").classList.remove("hidden");
     } else if (mode === 'AIopponent') {
       document.getElementById("inputP1").classList.remove("hidden");
       document.getElementById("inputAI").classList.remove("hidden");
+      document.getElementById("aiProgressContainer").style.display = "block";
     }
 
     updateUI();
@@ -179,25 +214,44 @@
     document.getElementById("patternDisplay").innerHTML = display;
     document.getElementById("result").textContent = "";
     document.getElementById("flagDisplay").textContent = "";
-    if (mode === 'AIopponent' || mode === 'AI') startAIChallenge();
-    else document.getElementById("aiProgress").textContent = "";
+    if (mode === 'AIopponent') startAIChallenge();
+    else {
+      document.getElementById("aiProgressContainer").style.display = "none";
+      document.getElementById("aiProgressBar").style.width = "0%";
+      document.getElementById("aiProgressLabel").textContent = "";
+    }
   }
 
   function startAIChallenge() {
     let aiProgress = 0;
     const aiSpeed = getAISpeed();
-    const progressDiv = document.getElementById("aiProgress");
+    const aiBar = document.getElementById("aiProgressBar");
+    const aiLabel = document.getElementById("aiProgressLabel");
+    aiBar.style.width = "0%";
+    aiLabel.textContent = "AI thinking... 0%";
+    document.getElementById("aiProgressContainer").style.display = "block";
+    let steps = 20;
+    let stepTime = aiSpeed / steps;
+    let currentStep = 0;
+
+    clearInterval(aiInterval);
+    clearTimeout(aiTimeout);
+
     aiInterval = setInterval(() => {
-      aiProgress += 10;
-      progressDiv.textContent = `💻 AI Progress: ${aiProgress}%`;
-    }, aiSpeed / 10);
+      currentStep++;
+      aiProgress = Math.floor((currentStep / steps) * 100);
+      aiBar.style.width = aiProgress + "%";
+      aiLabel.textContent = `AI thinking... ${aiProgress}%`;
+      if (aiProgress >= 100) {
+        clearInterval(aiInterval);
+      }
+    }, stepTime);
+
     aiTimeout = setTimeout(() => {
       clearInterval(aiInterval);
-      if (mode === 'AI') {
-        aiSolves();
-      } else {
-        aiWins();
-      }
+      aiBar.style.width = "100%";
+      aiLabel.textContent = `AI thinking... 100%`;
+      aiWins();
     }, aiSpeed);
   }
 
@@ -215,18 +269,6 @@
   function aiWins() {
     alert("💻 AI solved the pattern before you!\nGAME OVER.");
     endGame("AI won the round.");
-  }
-
-  function aiSolves() {
-    // In AI-only mode, AI just solves and shows correct answer, then proceeds
-    const result = document.getElementById("result");
-    result.textContent = `🤖 AI solved: ${correctAnswer}`;
-    result.style.color = "#00FF00";
-    level++;
-    updateUI();
-    setTimeout(() => {
-      getPattern();
-    }, 2000);
   }
 
   function generateFlag(player = 1) {
@@ -264,6 +306,12 @@
       result.style.color = "#00FF00";
       const newFlag = generateFlag(player);
       flag.textContent = `🎉 FLAG UNLOCKED: ${newFlag}`;
+      if (mode === 'AIopponent') {
+        clearTimeout(aiTimeout);
+        clearInterval(aiInterval);
+        document.getElementById("aiProgressBar").style.width = "0%";
+        document.getElementById("aiProgressLabel").textContent = "";
+      }
       if (mode === 'P2') {
         if (player === 1) {
           livesP1 = livesP1 === Infinity ? Infinity : livesP1;
@@ -326,7 +374,9 @@
     }
     document.getElementById("gameScreen").classList.add("hidden");
     document.getElementById("startScreen").classList.remove("hidden");
-    document.getElementById("aiProgress").textContent = "";
+    document.getElementById("aiProgressBar").style.width = "0%";
+    document.getElementById("aiProgressLabel").textContent = "";
+    document.getElementById("aiProgressContainer").style.display = "none";
   }
 
   startClock();
