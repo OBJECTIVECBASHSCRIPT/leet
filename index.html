@@ -12,7 +12,7 @@
       padding: 20px;
     }
     .hidden { display: none; }
-    .pattern, .result, .flag, .lives, .score, #timer {
+    .pattern, .result, .flag, .lives, .score, #timer, #clock {
       font-size: 20px;
       margin-top: 10px;
     }
@@ -55,6 +55,7 @@
     <div class="pattern" id="patternDisplay"></div>
     <div class="lives">Lives: <span id="livesDisplay"></span></div>
     <div class="score">Flags: <span id="flagsDisplay">0</span></div>
+    <div id="clock">🕒 --:--:--</div>
     <div id="timer"></div>
     <button onclick="checkAnswer()">Submit</button>
     <button onclick="quitGame()">Quit Game</button>
@@ -80,6 +81,17 @@
     document.getElementById("difficultyDisplay").textContent = difficulty;
     updateUI();
     getAIPattern();
+  }
+
+  function startClock() {
+    const clockEl = document.getElementById("clock");
+    setInterval(() => {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      clockEl.textContent = `🕒 ${hh}:${mm}:${ss}`;
+    }, 1000);
   }
 
   function updateUI() {
@@ -145,7 +157,7 @@
       clearInterval(timerInterval);
       startVeteranTimer();
     } else {
-      document.getElementById("timer").textContent = ""; // clear for other modes
+      document.getElementById("timer").textContent = "";
     }
 
     setTimeout(() => {
@@ -225,6 +237,9 @@
     document.getElementById("gameScreen").classList.add("hidden");
     document.getElementById("startScreen").classList.remove("hidden");
   }
+
+  // Start the live clock as soon as the script loads
+  startClock();
 </script>
 </body>
 </html>
