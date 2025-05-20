@@ -43,11 +43,18 @@
   <div id="startScreen">
     <h2>leet</h2>
     <p>Select Difficulty:</p>
-    <button onclick="startGame('Peaceful', Infinity, 1)">Peaceful(∞ lives)</button><br>
-    <button onclick="startGame('Easy', 8, 1)">Easy  (8 lives)</button><br>
-    <button onclick="startGame('Medium', 5, 2)">Medium (5 lives)</button><br>
-    <button onclick="startGame('Hard', 3, 3)">Hard  (3 lives)</button><br>
-    <button onclick="startGame('Veteran', 1, 5)">Veteran 💀 (1 life)</button>
+    <button onclick="setOpponentMode('P1')">Player 1</button>
+    <button onclick="setOpponentMode('P2')">Player 2</button>
+    <button onclick="setOpponentMode('AI')">AI Opponent</button><br><br>
+
+    <div id="difficultyOptions" class="hidden">
+      <p>Select Difficulty:</p>
+      <button onclick="startGame('Peaceful', Infinity, 1)">Peaceful(∞ lives)</button><br>
+      <button onclick="startGame('Easy', 8, 1)">Easy  (8 lives)</button><br>
+      <button onclick="startGame('Medium', 5, 2)">Medium (5 lives)</button><br>
+      <button onclick="startGame('Hard', 3, 3)">Hard  (3 lives)</button><br>
+      <button onclick="startGame('Veteran', 1, 5)">Veteran 💀 (1 life)</button>
+    </div>
   </div>
 
   <div id="gameScreen" class="hidden">
@@ -59,11 +66,10 @@
     <div id="timer"></div>
     <div id="aiProgress"></div>
     <div>
-      Player 1: <input type="number" id="userInputP1"> 
-      Player 2: <input type="number" id="userInputP2">
+      <div id="inputP1" class="hidden">Player 1: <input type="number" id="userInputP1"> <button onclick="checkAnswer(1)">Submit P1</button></div>
+      <div id="inputP2" class="hidden">Player 2: <input type="number" id="userInputP2"> <button onclick="checkAnswer(2)">Submit P2</button></div>
+      <div id="inputAI" class="hidden">AI is playing...</div>
     </div>
-    <button onclick="checkAnswer(1)">Submit P1</button>
-    <button onclick="checkAnswer(2)">Submit P2</button>
     <button onclick="quitGame()">Quit Game</button>
     <div class="result" id="result"></div>
     <div class="flag" id="flagDisplay"></div>
@@ -77,6 +83,12 @@
   let aiTimeout = null;
   let aiInterval = null;
   let winner = null;
+  let mode = "P1";
+
+  function setOpponentMode(selectedMode) {
+    mode = selectedMode;
+    document.getElementById("difficultyOptions").classList.remove("hidden");
+  }
 
   function startGame(diff, lifeCount, multi) {
     difficulty = diff;
@@ -88,6 +100,14 @@
     document.getElementById("startScreen").classList.add("hidden");
     document.getElementById("gameScreen").classList.remove("hidden");
     document.getElementById("difficultyDisplay").textContent = difficulty;
+
+    document.getElementById("inputP1").classList.add("hidden");
+    document.getElementById("inputP2").classList.add("hidden");
+    document.getElementById("inputAI").classList.add("hidden");
+    if (mode === 'P1') document.getElementById("inputP1").classList.remove("hidden");
+    if (mode === 'P2') document.getElementById("inputP2").classList.remove("hidden");
+    if (mode === 'AI') document.getElementById("inputAI").classList.remove("hidden");
+
     updateUI();
     getPattern();
   }
@@ -136,7 +156,7 @@
     document.getElementById("patternDisplay").innerHTML = display;
     document.getElementById("result").textContent = "";
     document.getElementById("flagDisplay").textContent = "";
-    startAIChallenge();
+    if (mode === 'AI') startAIChallenge();
   }
 
   function startAIChallenge() {
