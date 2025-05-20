@@ -43,9 +43,7 @@
   <div id="startScreen">
     <h2>leet</h2>
     <p>Select Game Mode:</p>
-    <button onclick="setOpponentMode('P1')">Player 1</button>
-    <button onclick="setOpponentMode('P2')">Player 2</button>
-    <button onclick="setOpponentMode('AI')">AI Opponent</button><br><br>
+    <button onclick="setOpponentMode('P1vsAI')">Player 1 vs AI</button><br><br>
 
     <div id="difficultyOptions" class="hidden">
       <p>Select Difficulty:</p>
@@ -67,7 +65,6 @@
     <div id="aiProgress"></div>
     <div>
       <div id="inputP1" class="hidden">Player 1: <input type="number" id="userInputP1"> <button onclick="checkAnswer(1)">Submit P1</button></div>
-      <div id="inputP2" class="hidden">Player 2: <input type="number" id="userInputP2"> <button onclick="checkAnswer(2)">Submit P2</button></div>
       <div id="inputAI" class="hidden">AI is playing...</div>
     </div>
     <button onclick="quitGame()">Quit Game</button>
@@ -83,7 +80,7 @@
   let aiTimeout = null;
   let aiInterval = null;
   let winner = null;
-  let mode = "P1";
+  let mode = "P1vsAI";
 
   function setOpponentMode(selectedMode) {
     mode = selectedMode;
@@ -103,15 +100,10 @@
     document.getElementById("difficultyDisplay").textContent = difficulty;
 
     document.getElementById("inputP1").classList.add("hidden");
-    document.getElementById("inputP2").classList.add("hidden");
     document.getElementById("inputAI").classList.add("hidden");
 
-    if (mode === 'P1') {
+    if (mode === 'P1vsAI') {
       document.getElementById("inputP1").classList.remove("hidden");
-    } else if (mode === 'P2') {
-      document.getElementById("inputP1").classList.remove("hidden");
-      document.getElementById("inputP2").classList.remove("hidden");
-    } else if (mode === 'AI') {
       document.getElementById("inputAI").classList.remove("hidden");
     }
 
@@ -163,7 +155,7 @@
     document.getElementById("patternDisplay").innerHTML = display;
     document.getElementById("result").textContent = "";
     document.getElementById("flagDisplay").textContent = "";
-    if (mode === 'AI') startAIChallenge();
+    if (mode === 'P1vsAI') startAIChallenge();
   }
 
   function startAIChallenge() {
@@ -205,10 +197,9 @@
   }
 
   function checkAnswer(player) {
-    if (winner || (mode !== 'P2' && ((mode === 'P1' && player !== 1) || mode === 'AI'))) return;
+    if (winner || mode !== 'P1vsAI' || player !== 1) return;
 
-    const inputId = player === 1 ? 'userInputP1' : 'userInputP2';
-    const userVal = parseInt(document.getElementById(inputId).value);
+    const userVal = parseInt(document.getElementById('userInputP1').value);
     const result = document.getElementById("result");
     const flag = document.getElementById("flagDisplay");
 
@@ -222,12 +213,7 @@
       updateUI();
       setTimeout(() => {
         winner = null;
-        if (mode === 'P1') {
-          document.getElementById("userInputP1").value = "";
-        } else if (mode === 'P2') {
-          document.getElementById("userInputP1").value = "";
-          document.getElementById("userInputP2").value = "";
-        }
+        document.getElementById("userInputP1").value = "";
         getPattern();
       }, 3000);
     } else {
