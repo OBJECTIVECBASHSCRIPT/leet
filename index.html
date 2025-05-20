@@ -58,7 +58,12 @@
     <div id="clock">🕒 --:--:--</div>
     <div id="timer"></div>
     <div id="aiProgress"></div>
-    <button onclick="checkAnswer()">Submit</button>
+    <div>
+      Player 1: <input type="number" id="userInputP1"> 
+      Player 2: <input type="number" id="userInputP2">
+    </div>
+    <button onclick="checkAnswer(1)">Submit P1</button>
+    <button onclick="checkAnswer(2)">Submit P2</button>
     <button onclick="quitGame()">Quit Game</button>
     <div class="result" id="result"></div>
     <div class="flag" id="flagDisplay"></div>
@@ -71,6 +76,7 @@
   let timeLeft = 10;
   let aiTimeout = null;
   let aiInterval = null;
+  let winner = null;
 
   function startGame(diff, lifeCount, multi) {
     difficulty = diff;
@@ -83,7 +89,7 @@
     document.getElementById("gameScreen").classList.remove("hidden");
     document.getElementById("difficultyDisplay").textContent = difficulty;
     updateUI();
-    getAIPattern();
+    getPattern();
   }
 
   function startClock() {
@@ -103,18 +109,8 @@
     document.getElementById("flagsDisplay").textContent = flags.length;
   }
 
-  async function getAIPattern() {
-    try {
-      const res = await fetch('/generate-pattern');
-      const data = await res.json();
-      if (!data.pattern || !Array.isArray(data.pattern)) throw new Error("Bad AI data");
-      sequence = data.pattern.map(val => val === '?' ? null : val);
-      correctAnswer = sequence.find(val => val === null);
-      missingIndex = sequence.indexOf(null);
-      renderPattern();
-    } catch (error) {
-      generatePatternFallback();
-    }
+  function getPattern() {
+    generatePatternFallback();
   }
 
   function generatePatternFallback() {
@@ -136,39 +132,11 @@
   }
 
   function renderPattern() {
-    const display = sequence.map((val, idx) => idx === missingIndex ? `<input type="number" id="userInput">` : val).join(", ");
+    const display = sequence.map((val, idx) => idx === missingIndex ? '?' : val).join(", ");
     document.getElementById("patternDisplay").innerHTML = display;
     document.getElementById("result").textContent = "";
     document.getElementById("flagDisplay").textContent = "";
-    if (difficulty === 'Veteran') {
-      clearInterval(timerInterval);
-      startVeteranTimer();
-    } else {
-      document.getElementById("timer").textContent = "";
-    }
-    setTimeout(() => {
-      const input = document.getElementById("userInput");
-      if (input) {
-        input.focus();
-        input.addEventListener("keydown", function (e) {
-          if (e.key === "Enter") checkAnswer();
-        });
-      }
-    }, 100);
     startAIChallenge();
-  }
-
-  function startVeteranTimer() {
-    timeLeft = 10;
-    document.getElementById("timer").textContent = `⏱ Time Left: ${timeLeft}s`;
-    timerInterval = setInterval(() => {
-      timeLeft--;
-      document.getElementById("timer").textContent = `⏱ Time Left: ${timeLeft}s`;
-      if (timeLeft <= 0) {
-        clearInterval(timerInterval);
-        endGame("⏱ Time's up! Game Over.");
-      }
-    }, 1000);
   }
 
   function startAIChallenge() {
@@ -209,29 +177,29 @@
     return flag;
   }
 
-  function checkAnswer() {
-    clearInterval(timerInterval);
-    clearTimeout(aiTimeout);
-    clearInterval(aiInterval);
-    const userInput = document.getElementById('userInput');
-    const userVal = parseInt(userInput.value);
-    const result = document.getElementById('result');
-    const flag = document.getElementById('flagDisplay');
+  function checkAnswer(player) {
+    if (winner) return;
+    const inputId = player === 1 ? 'userInputP1' : 'userInputP2';
+    const userVal = parseInt(document.getElementById(inputId).value);
+    const result = document.getElementById("result");
+    const flag = document.getElementById("flagDisplay");
+
     if (userVal === correctAnswer) {
-      result.textContent = "✅ Correct! Leveling up...";
+      winner = `Player ${player}`;
+      result.textContent = `✅ ${winner} Correct!`;
       result.style.color = "#00FF00";
       const newFlag = generateFlag();
       flag.textContent = `🎉 FLAG UNLOCKED: ${newFlag}`;
       level++;
-      if (level > 255) return endGame("🎯 MAX LEVEL REACHED!");
+      updateUI();
+      setTimeout(() => {
+        winner = null;
+        getPattern();
+      }, 3000);
     } else {
-      result.textContent = `❌ Incorrect. Correct: ${correctAnswer}`;
+      result.textContent = `❌ Player ${player} Incorrect.`;
       result.style.color = "red";
-      if (lives !== Infinity) lives--;
-      if (lives === 0) return endGame("💀 Game Over");
     }
-    updateUI();
-    setTimeout(getAIPattern, 3000);
   }
 
   function quitGame() {
