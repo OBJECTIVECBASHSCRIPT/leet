@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -96,6 +96,7 @@
     multiplier = multi;
     level = 1;
     flags = [];
+    winner = null;
     localStorage.setItem("flags", JSON.stringify(flags));
     document.getElementById("startScreen").classList.add("hidden");
     document.getElementById("gameScreen").classList.remove("hidden");
@@ -104,9 +105,15 @@
     document.getElementById("inputP1").classList.add("hidden");
     document.getElementById("inputP2").classList.add("hidden");
     document.getElementById("inputAI").classList.add("hidden");
-    if (mode === 'P1') document.getElementById("inputP1").classList.remove("hidden");
-    if (mode === 'P2') document.getElementById("inputP2").classList.remove("hidden");
-    if (mode === 'AI') document.getElementById("inputAI").classList.remove("hidden");
+
+    if (mode === 'P1') {
+      document.getElementById("inputP1").classList.remove("hidden");
+    } else if (mode === 'P2') {
+      document.getElementById("inputP1").classList.remove("hidden");
+      document.getElementById("inputP2").classList.remove("hidden");
+    } else if (mode === 'AI') {
+      document.getElementById("inputAI").classList.remove("hidden");
+    }
 
     updateUI();
     getPattern();
@@ -198,7 +205,8 @@
   }
 
   function checkAnswer(player) {
-    if (winner) return;
+    if (winner || (mode !== 'P2' && ((mode === 'P1' && player !== 1) || mode === 'AI'))) return;
+
     const inputId = player === 1 ? 'userInputP1' : 'userInputP2';
     const userVal = parseInt(document.getElementById(inputId).value);
     const result = document.getElementById("result");
@@ -214,6 +222,12 @@
       updateUI();
       setTimeout(() => {
         winner = null;
+        if (mode === 'P1') {
+          document.getElementById("userInputP1").value = "";
+        } else if (mode === 'P2') {
+          document.getElementById("userInputP1").value = "";
+          document.getElementById("userInputP2").value = "";
+        }
         getPattern();
       }, 3000);
     } else {
