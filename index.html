@@ -12,7 +12,7 @@
       padding: 20px;
     }
     .hidden { display: none; }
-    .pattern, .result, .flag, .lives, .score {
+    .pattern, .result, .flag, .lives, .score, #timer {
       font-size: 20px;
       margin-top: 10px;
     }
@@ -55,6 +55,7 @@
     <div class="pattern" id="patternDisplay"></div>
     <div class="lives">Lives: <span id="livesDisplay"></span></div>
     <div class="score">Flags: <span id="flagsDisplay">0</span></div>
+    <div id="timer"></div>
     <button onclick="checkAnswer()">Submit</button>
     <button onclick="quitGame()">Quit Game</button>
     <div class="result" id="result"></div>
@@ -64,6 +65,8 @@
 <script>
   let level = 1, lives, difficulty, multiplier, sequence = [], correctAnswer, missingIndex;
   let flags = JSON.parse(localStorage.getItem("flags")) || [];
+  let timerInterval = null;
+  let timeLeft = 10;
 
   function startGame(diff, lifeCount, multi) {
     difficulty = diff;
@@ -90,35 +93,84 @@
       const res = await fetch('/generate-pattern');
       const data = await res.json();
 
-      if (!data.pattern || !Array.isArray(data.pattern)) {
-        throw new Error("Invalid pattern returned.");
-      }
+      if (!data.pattern || !Array.isArray(data.pattern)) throw new Error("Bad AI data");
 
       sequence = data.pattern.map(val => val === '?' ? null : val);
       correctAnswer = sequence.find(val => val === null);
       missingIndex = sequence.indexOf(null);
-
-      const display = sequence.map((val, idx) =>
-        idx === missingIndex ? `<input type="number" id="userInput">` : val
-      ).join(", ");
-
-      document.getElementById("patternDisplay").innerHTML = display;
-      document.getElementById("result").textContent = "";
-      document.getElementById("flagDisplay").textContent = "";
-
-      setTimeout(() => {
-        const input = document.getElementById("userInput");
-        if (input) {
-          input.focus();
-          input.addEventListener("keydown", function (e) {
-            if (e.key === "Enter") checkAnswer();
-          });
-        }
-      }, 100);
+      renderPattern();
     } catch (error) {
-      console.error("Error fetching AI pattern:", error);
-      document.getElementById("patternDisplay").textContent = "⚠️ Failed to load pattern.";
+      console.warn("Using fallback pattern:", error);
+      generatePatternFallback();
     }
+  }
+
+  function generatePatternFallback() {
+    const isFibo = level % 2 === 0;
+    const length = 6;
+    sequence = [];
+
+    if (isFibo) {
+      let a = Math.floor(Math.random() * 3) + 1;
+      let b = a;
+      sequence.push(a, b);
+      for (let i = 2; i < length; i++) {
+        sequence.push(sequence[i - 1] + sequence[i - 2]);
+      }
+    } else {
+      let start = Math.floor(Math.random() * 10) + 1;
+      let step = Math.floor(Math.random() * 5) + 2;
+      for (let i = 0; i < length; i++) {
+        sequence.push(start + i * step);
+      }
+    }
+
+    missingIndex = Math.floor(Math.random() * (length - 2)) + 1;
+    correctAnswer = sequence[missingIndex];
+    sequence[missingIndex] = null;
+
+    renderPattern();
+  }
+
+  function renderPattern() {
+    const display = sequence.map((val, idx) =>
+      idx === missingIndex ? `<input type="number" id="userInput">` : val
+    ).join(", ");
+
+    document.getElementById("patternDisplay").innerHTML = display;
+    document.getElementById("result").textContent = "";
+    document.getElementById("flagDisplay").textContent = "";
+
+    if (difficulty === 'Veteran') {
+      clearInterval(timerInterval);
+      startVeteranTimer();
+    } else {
+      document.getElementById("timer").textContent = ""; // clear for other modes
+    }
+
+    setTimeout(() => {
+      const input = document.getElementById("userInput");
+      if (input) {
+        input.focus();
+        input.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") checkAnswer();
+        });
+      }
+    }, 100);
+  }
+
+  function startVeteranTimer() {
+    timeLeft = 10;
+    document.getElementById("timer").textContent = `⏱ Time Left: ${timeLeft}s`;
+
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      document.getElementById("timer").textContent = `⏱ Time Left: ${timeLeft}s`;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        endGame("⏱ Time's up! Game Over.");
+      }
+    }, 1000);
   }
 
   function generateFlag() {
@@ -130,6 +182,7 @@
   }
 
   function checkAnswer() {
+    clearInterval(timerInterval);
     const userInput = document.getElementById('userInput');
     const userVal = parseInt(userInput.value);
     const result = document.getElementById('result');
@@ -161,16 +214,17 @@
   }
 
   function quitGame() {
+    clearInterval(timerInterval);
     endGame("🛑 Game Quit");
   }
 
   function endGame(message) {
+    clearInterval(timerInterval);
     const totalPoints = flags.length * 10 * multiplier;
     alert(`${message}\nFlags: ${flags.length}\nPoints: ${totalPoints}`);
     document.getElementById("gameScreen").classList.add("hidden");
     document.getElementById("startScreen").classList.remove("hidden");
   }
 </script>
-
 </body>
 </html>
