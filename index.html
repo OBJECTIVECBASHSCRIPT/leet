@@ -1,6 +1,4 @@
-
-
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -39,7 +37,6 @@
     button:hover {
       background-color: #004400;
     }
-    /* Progress bar styles */
     #aiProgressContainer {
       width: 300px;
       background: #222;
@@ -73,15 +70,20 @@
       width: 300px;
       height: 25px;
     }
+    .mode-btn.selected {
+      background-color: #00FF00;
+      color: #002200;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <div id="startScreen">
     <h2>leet</h2>
     <p>Select Game Mode:</p>
-    <button onclick="setOpponentMode('P1')">Player 1 (Solo)</button><br>
-    <button onclick="setOpponentMode('P2')">Player 1 vs Player 2</button><br>
-    <button onclick="setOpponentMode('AIopponent')">AI Opponent</button><br><br>
+    <button class="mode-btn" onclick="setOpponentMode('P1')">solo</button><br>
+    <button class="mode-btn" onclick="setOpponentMode('P2')">pvp</button><br>
+    <button class="mode-btn" onclick="setOpponentMode('AIopponent')">AI</button><br><br>
     <div id="difficultyOptions" class="hidden">
       <p>Select Difficulty:</p>
       <button onclick="startGame('Peaceful', Infinity, 1)">Peaceful(∞ lives)</button><br>
@@ -99,7 +101,6 @@
     <div class="score">Flags: <span id="flagsDisplay">0</span></div>
     <div id="clock">🕒 --:--:--</div>
     <div id="timer"></div>
-    <!-- Progress bar for AI -->
     <div id="aiProgressContainer" class="progress-wrap">
       <div id="aiProgressBar"></div>
       <div id="aiProgressLabel"></div>
@@ -107,7 +108,7 @@
     <div>
       <div id="inputP1" class="hidden">Player 1: <input type="number" id="userInputP1"> <button onclick="checkAnswer(1)">Submit P1</button></div>
       <div id="inputP2" class="hidden">Player 2: <input type="number" id="userInputP2"> <button onclick="checkAnswer(2)">Submit P2</button></div>
-      <div id="inputAI" class="hidden">AI is playing...</div>
+      <!-- <div id="inputAI" class="hidden">AI is playing...</div> -->
     </div>
     <button onclick="quitGame()">Quit Game</button>
     <div class="result" id="result"></div>
@@ -123,12 +124,16 @@
   let aiInterval = null;
   let winner = null;
   let mode = "P1";
-  // For P2 mode
   let livesP1 = 0, livesP2 = 0, flagsP1 = 0, flagsP2 = 0;
 
   function setOpponentMode(selectedMode) {
     mode = selectedMode;
     document.getElementById("difficultyOptions").classList.remove("hidden");
+    const buttons = document.querySelectorAll('.mode-btn');
+    buttons.forEach(btn => btn.classList.remove('selected'));
+    if (selectedMode === 'P1') buttons[0].classList.add('selected');
+    else if (selectedMode === 'P2') buttons[1].classList.add('selected');
+    else if (selectedMode === 'AIopponent') buttons[2].classList.add('selected');
   }
 
   function startGame(diff, lifeCount, multi) {
@@ -142,14 +147,9 @@
     document.getElementById("startScreen").classList.add("hidden");
     document.getElementById("gameScreen").classList.remove("hidden");
     document.getElementById("difficultyDisplay").textContent = difficulty;
-
-    // Reset all input sections
     document.getElementById("inputP1").classList.add("hidden");
     document.getElementById("inputP2").classList.add("hidden");
-    document.getElementById("inputAI").classList.add("hidden");
     document.getElementById("aiProgressContainer").style.display = "none";
-
-    // Show relevant input sections
     if (mode === 'P1') {
       document.getElementById("inputP1").classList.remove("hidden");
     } else if (mode === 'P2') {
@@ -159,12 +159,12 @@
       flagsP1 = flagsP2 = 0;
     } else if (mode === 'AIopponent') {
       document.getElementById("inputP1").classList.remove("hidden");
-      document.getElementById("inputAI").classList.remove("hidden");
       document.getElementById("aiProgressContainer").style.display = "block";
     }
-
     updateUI();
     getPattern();
+    // Focus and bind Enter keys
+    setTimeout(bindEnterEvents, 200);
   }
 
   function startClock() {
@@ -222,6 +222,7 @@
       document.getElementById("aiProgressBar").style.width = "0%";
       document.getElementById("aiProgressLabel").textContent = "";
     }
+    setTimeout(bindEnterEvents, 200);
   }
 
   function startAIChallenge() {
@@ -235,10 +236,8 @@
     let steps = 20;
     let stepTime = aiSpeed / steps;
     let currentStep = 0;
-
     clearInterval(aiInterval);
     clearTimeout(aiTimeout);
-
     aiInterval = setInterval(() => {
       currentStep++;
       aiProgress = Math.floor((currentStep / steps) * 100);
@@ -248,7 +247,6 @@
         clearInterval(aiInterval);
       }
     }, stepTime);
-
     aiTimeout = setTimeout(() => {
       clearInterval(aiInterval);
       aiBar.style.width = "100%";
@@ -294,14 +292,11 @@
     if (mode === 'P1' && player !== 1) return;
     if (mode === 'AIopponent' && player !== 1) return;
     if (mode === 'P2' && !(player === 1 || player === 2)) return;
-
     let userVal;
     if (player === 1) userVal = parseInt(document.getElementById('userInputP1').value);
     else if (player === 2) userVal = parseInt(document.getElementById('userInputP2').value);
-
     const result = document.getElementById("result");
     const flag = document.getElementById("flagDisplay");
-
     if (userVal === correctAnswer) {
       winner = `Player ${player}`;
       result.textContent = `✅ ${winner} Correct!`;
@@ -381,7 +376,21 @@
     document.getElementById("aiProgressContainer").style.display = "none";
   }
 
+  function bindEnterEvents() {
+    const inputP1 = document.getElementById('userInputP1');
+    if (inputP1) {
+      inputP1.onkeydown = function(e) { if (e.key === 'Enter') checkAnswer(1); };
+    }
+    const inputP2 = document.getElementById('userInputP2');
+    if (inputP2) {
+      inputP2.onkeydown = function(e) { if (e.key === 'Enter') checkAnswer(2); };
+    }
+  }
+
   startClock();
+  // Make sure Enter key triggers are set on first load as well
+  document.addEventListener('DOMContentLoaded', bindEnterEvents);
+
 </script>
 </body>
 </html>
