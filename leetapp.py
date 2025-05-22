@@ -1,47 +1,69 @@
 import random
+import sys
 
-class NumericPatternGame:
+class LeetGame:
     def __init__(self):
-        self.difficulty = 1
-        self.score = 0
+        self.level = 1
+        self.flags = []
+        self.lives = 2
+        self.multiplier = 1
+        self.running = True
+
+    def start(self):
+        print("leet: h4x0r edition")
+        print("Mode: Survival")
+        while self.running:
+            self.play_level()
+
+    def play_level(self):
+        pattern, answer, idx = self.generate_pattern()
+        display = [str(val) if i != idx else "___" for i, val in enumerate(pattern)]
+
+        print(f"\nLevel {self.level} | Lives: {int(self.lives)} | Flags: {len(self.flags)}")
+        print("Pattern:", ", ".join(display))
+
+        user_input = input("Your answer (or 'q' to quit): ").strip()
+        if user_input.lower() == 'q':
+            self.quit_game("Game Quit")
+            return
+
+        try:
+            if int(user_input) == answer:
+                flag = self.generate_flag()
+                self.flags.append(flag)
+                print(f"✅ Correct! FLAG UNLOCKED: {flag}")
+                self.level += 1
+                if self.level > 255:
+                    self.quit_game("MAX LEVEL REACHED")
+            else:
+                print(f"❌ Incorrect. The answer was {answer}.")
+                self.lives -= 1
+                if self.lives <= 0:
+                    self.quit_game("Game Over")
+        except ValueError:
+            print("Invalid input. Please enter a number or 'q'.")
 
     def generate_pattern(self):
-        pattern = [random.randint(1, self.difficulty*9) for _ in range(self.difficulty)]
-        return pattern
+        is_geo = self.level % 2 == 0
+        start = random.randint(2, 6)
+        step = random.randint(2, 5) + self.level // 10
+        length = min(6 + self.level // 10, 10)
+        seq = [start]
+        for _ in range(1, length):
+            seq.append(seq[-1] * step if is_geo else seq[-1] + step)
+        idx = random.randint(1, length - 2)
+        return seq, seq[idx], idx
 
-    def play(self):
-        while True:
-            print(f"Current difficulty level: {self.difficulty}")
-            print(f"Your current score: {self.score}")
-            pattern = self.generate_pattern()
-            print("Pattern:", pattern)
-            user_input = input("Enter the next number in the pattern (or 'q' to quit): ")
-            if user_input == "q":
-                break
-            try:
-                user_answer = int(user_input)
-                correct_answer = self.calculate_next_number(pattern)
-                if user_answer == correct_answer:
-                    print("Correct!")
-                    self.score += 1
-                    self.difficulty = min(self.difficulty + 1, 5) # Max difficulty level is 5
-                else:
-                    print("Incorrect.")
-                    self.difficulty = max(self.difficulty - 1, 1) # Min difficulty level is 1
-            except ValueError:
-                print("Invalid input. Please enter a number or 'q' to quit.")
-        print("Game over. Your final score:", self.score)
+    def generate_flag(self):
+        suffix = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=4))
+        return f"FLAG-L{self.level}-{suffix}"
 
-    def calculate_next_number(self, pattern):
-        if len(pattern) == 1:
-            return pattern[0] + random.randint(1, 9)
-        elif all(x - y == pattern[1] - pattern[0] for x, y in zip(pattern[1:], pattern)):
-            # If the pattern is an arithmetic sequence
-            return pattern[-1] + (pattern[1] - pattern[0])
-        else:
-            # For simplicity's sake, we'll just add a random number for other patterns
-            return pattern[-1] + random.randint(1, 9)
+    def quit_game(self, message):
+        print(f"\n{message}")
+        print(f"Total Flags: {len(self.flags)}")
+        print(f"Total Points: {len(self.flags) * 10 * self.multiplier}")
+        self.running = False
 
 if __name__ == "__main__":
-    game = NumericPatternGame()
-    game.play()
+    game = LeetGame()
+    game.start()
