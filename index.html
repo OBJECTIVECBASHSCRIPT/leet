@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>leet</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+  <title>leet: h4x0r edition</title>
   <style>
     body {
       background-color: black;
@@ -11,386 +10,134 @@
       font-family: 'Courier New', monospace;
       padding: 20px;
     }
+    #game { display: none; }
     .hidden { display: none; }
-    .pattern, .result, .flag, .lives, .score, #timer, #clock, #aiProgressContainer {
-      font-size: 20px;
-      margin-top: 10px;
-    }
-    input[type="number"] {
-      width: 80px;
-      padding: 5px;
-      font-size: 18px;
-      background-color: #003300;
-      color: #00FF00;
-      border: 1px solid #00FF00;
-    }
-    button {
-      padding: 6px 12px;
-      font-size: 16px;
-      background-color: #002200;
-      color: #00FF00;
-      border: 1px solid #00FF00;
-      cursor: pointer;
-      margin-right: 10px;
-      margin-bottom: 5px;
-    }
-    button:hover {
-      background-color: #004400;
-    }
-    #aiProgressContainer {
-      width: 300px;
-      background: #222;
-      border: 1px solid #00FF00;
-      height: 25px;
-      border-radius: 6px;
-      overflow: hidden;
-      margin-top: 15px;
-      margin-bottom: 10px;
-      display: none; /* Show only in AI Opponent mode */
-    }
-    #aiProgressBar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #00FF00 60%, #008800 100%);
-      transition: width 0.2s linear;
-    }
-    #aiProgressLabel {
-      color: #00FF00;
-      font-size: 16px;
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      top: 2px;
-      width: 100%;
-      text-align: center;
-      pointer-events: none;
-    }
-    .progress-wrap {
-      position: relative;
-      width: 300px;
-      height: 25px;
-    }
-    .mode-btn.selected {
-      background-color: #00FF00;
-      color: #002200;
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
-  <div id="startScreen">
-    <h2>leet</h2>
-    <p>Select Game Mode:</p>
-    <button class="mode-btn" onclick="setOpponentMode('P1')">solo</button><br>
-    <button class="mode-btn" onclick="setOpponentMode('P2')">pvp</button><br>
-    <button class="mode-btn" onclick="setOpponentMode('AIopponent')">AI</button><br><br>
-    <div id="difficultyOptions" class="hidden">
-      <p>Select Difficulty:</p>
-      <button onclick="startGame('Peaceful', Infinity, 1)">Peaceful(∞ lives)</button><br>
-      <button onclick="startGame('Easy', 8, 1)">Easy  (8 lives)</button><br>
-      <button onclick="startGame('Medium', 5, 2)">Medium (5 lives)</button><br>
-      <button onclick="startGame('Hard', 3, 3)">Hard  (3 lives)</button><br>
-      <button onclick="startGame('Veteran', 1, 5)">Veteran 💀 (1 life)</button>
-    </div>
+  <h1>leet: h4x0r edition</h1>
+  <div id="intro">
+    <button onclick="startGame()">Start Game</button>
+  </div>
+  <div id="game">
+    <div id="status"></div>
+    <div id="perkInfo"></div>
+    <div id="pattern"></div>
+    <input type="text" id="answerInput" placeholder="Enter your answer or 'q'">
+    <button onclick="submitAnswer()">Submit</button>
   </div>
 
-  <div id="gameScreen" class="hidden">
-    <h2>🧠 Level <span id="levelDisplay">1</span> - <span id="difficultyDisplay"></span></h2>
-    <div class="pattern" id="patternDisplay"></div>
-    <div class="lives">Lives: <span id="livesDisplay"></span></div>
-    <div class="score">Flags: <span id="flagsDisplay">0</span></div>
-    <div id="clock">🕒 --:--:--</div>
-    <div id="timer"></div>
-    <div id="aiProgressContainer" class="progress-wrap">
-      <div id="aiProgressBar"></div>
-      <div id="aiProgressLabel"></div>
-    </div>
-    <div>
-      <div id="inputP1" class="hidden">Player 1: <input type="number" id="userInputP1"> <button onclick="checkAnswer(1)">Submit P1</button></div>
-      <div id="inputP2" class="hidden">Player 2: <input type="number" id="userInputP2"> <button onclick="checkAnswer(2)">Submit P2</button></div>
-      <!-- <div id="inputAI" class="hidden">AI is playing...</div> -->
-    </div>
-    <button onclick="quitGame()">Quit Game</button>
-    <div class="result" id="result"></div>
-    <div class="flag" id="flagDisplay"></div>
-  </div>
+  <script>
+    let level = 1;
+    let flags = [];
+    let lives = 2;
+    let multiplier = 1;
+    let running = true;
 
-<script>
-  let level = 1, lives, difficulty, multiplier, sequence = [], correctAnswer, missingIndex;
-  let flags = JSON.parse(localStorage.getItem("flags")) || [];
-  let timerInterval = null;
-  let timeLeft = 10;
-  let aiTimeout = null;
-  let aiInterval = null;
-  let winner = null;
-  let mode = "P1";
-  let livesP1 = 0, livesP2 = 0, flagsP1 = 0, flagsP2 = 0;
+    let perk1337 = false;
+    let boost = 0;
+    let errorFreeGraces = 0;
+    let hitsPerLife = 3;
+    let hitsLeft = 3;
 
-  function setOpponentMode(selectedMode) {
-    mode = selectedMode;
-    document.getElementById("difficultyOptions").classList.remove("hidden");
-    const buttons = document.querySelectorAll('.mode-btn');
-    buttons.forEach(btn => btn.classList.remove('selected'));
-    if (selectedMode === 'P1') buttons[0].classList.add('selected');
-    else if (selectedMode === 'P2') buttons[1].classList.add('selected');
-    else if (selectedMode === 'AIopponent') buttons[2].classList.add('selected');
-  }
+    let currentAnswer = 0;
 
-  function startGame(diff, lifeCount, multi) {
-    difficulty = diff;
-    lives = lifeCount;
-    multiplier = multi;
-    level = 1;
-    flags = [];
-    winner = null;
-    localStorage.setItem("flags", JSON.stringify(flags));
-    document.getElementById("startScreen").classList.add("hidden");
-    document.getElementById("gameScreen").classList.remove("hidden");
-    document.getElementById("difficultyDisplay").textContent = difficulty;
-    document.getElementById("inputP1").classList.add("hidden");
-    document.getElementById("inputP2").classList.add("hidden");
-    document.getElementById("aiProgressContainer").style.display = "none";
-    if (mode === 'P1') {
-      document.getElementById("inputP1").classList.remove("hidden");
-    } else if (mode === 'P2') {
-      document.getElementById("inputP1").classList.remove("hidden");
-      document.getElementById("inputP2").classList.remove("hidden");
-      livesP1 = livesP2 = (lives === Infinity ? Infinity : lives);
-      flagsP1 = flagsP2 = 0;
-    } else if (mode === 'AIopponent') {
-      document.getElementById("inputP1").classList.remove("hidden");
-      document.getElementById("aiProgressContainer").style.display = "block";
+    function startGame() {
+      document.getElementById("intro").style.display = 'none';
+      document.getElementById("game").style.display = 'block';
+      nextLevel();
     }
-    updateUI();
-    getPattern();
-    // Focus and bind Enter keys
-    setTimeout(bindEnterEvents, 200);
-  }
 
-  function startClock() {
-    const clockEl = document.getElementById("clock");
-    setInterval(() => {
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2, '0');
-      const mm = String(now.getMinutes()).padStart(2, '0');
-      const ss = String(now.getSeconds()).padStart(2, '0');
-      clockEl.textContent = `🕒 ${hh}:${mm}:${ss}`;
-    }, 1000);
-  }
-
-  function updateUI() {
-    document.getElementById("levelDisplay").textContent = level;
-    if (mode === 'P2') {
-      document.getElementById("livesDisplay").textContent = `P1: ${livesP1 === Infinity ? '∞' : livesP1} | P2: ${livesP2 === Infinity ? '∞' : livesP2}`;
-      document.getElementById("flagsDisplay").textContent = `P1: ${flagsP1} | P2: ${flagsP2}`;
-    } else {
-      document.getElementById("livesDisplay").textContent = lives === Infinity ? '∞' : lives;
-      document.getElementById("flagsDisplay").textContent = flags.length;
-    }
-  }
-
-  function getPattern() {
-    generatePatternFallback();
-  }
-
-  function generatePatternFallback() {
-    const isFibo = level % 2 === 0;
-    const length = 6;
-    sequence = [];
-    if (isFibo) {
-      let a = Math.floor(Math.random() * 3) + 1, b = a;
-      sequence.push(a, b);
-      for (let i = 2; i < length; i++) sequence.push(sequence[i - 1] + sequence[i - 2]);
-    } else {
-      let start = Math.floor(Math.random() * 10) + 1, step = Math.floor(Math.random() * 5) + 2;
-      for (let i = 0; i < length; i++) sequence.push(start + i * step);
-    }
-    missingIndex = Math.floor(Math.random() * (length - 2)) + 1;
-    correctAnswer = sequence[missingIndex];
-    sequence[missingIndex] = null;
-    renderPattern();
-  }
-
-  function renderPattern() {
-    const display = sequence.map((val, idx) => idx === missingIndex ? '?' : val).join(", ");
-    document.getElementById("patternDisplay").innerHTML = display;
-    document.getElementById("result").textContent = "";
-    document.getElementById("flagDisplay").textContent = "";
-    if (mode === 'AIopponent') startAIChallenge();
-    else {
-      document.getElementById("aiProgressContainer").style.display = "none";
-      document.getElementById("aiProgressBar").style.width = "0%";
-      document.getElementById("aiProgressLabel").textContent = "";
-    }
-    setTimeout(bindEnterEvents, 200);
-  }
-
-  function startAIChallenge() {
-    let aiProgress = 0;
-    const aiSpeed = getAISpeed();
-    const aiBar = document.getElementById("aiProgressBar");
-    const aiLabel = document.getElementById("aiProgressLabel");
-    aiBar.style.width = "0%";
-    aiLabel.textContent = "AI thinking... 0%";
-    document.getElementById("aiProgressContainer").style.display = "block";
-    let steps = 20;
-    let stepTime = aiSpeed / steps;
-    let currentStep = 0;
-    clearInterval(aiInterval);
-    clearTimeout(aiTimeout);
-    aiInterval = setInterval(() => {
-      currentStep++;
-      aiProgress = Math.floor((currentStep / steps) * 100);
-      aiBar.style.width = aiProgress + "%";
-      aiLabel.textContent = `AI thinking... ${aiProgress}%`;
-      if (aiProgress >= 100) {
-        clearInterval(aiInterval);
+    function nextLevel() {
+      if (!running) return;
+      if (!perk1337 && flags.length >= 25) {
+        if (confirm("Activate 1337 perk for 25 flags?")) activate1337();
       }
-    }, stepTime);
-    aiTimeout = setTimeout(() => {
-      clearInterval(aiInterval);
-      aiBar.style.width = "100%";
-      aiLabel.textContent = `AI thinking... 100%`;
-      aiWins();
-    }, aiSpeed);
-  }
 
-  function getAISpeed() {
-    switch (difficulty) {
-      case "Peaceful": return 999999;
-      case "Easy": return 8000;
-      case "Medium": return 6000;
-      case "Hard": return 4000;
-      case "Veteran": return 3000;
-      default: return 5000;
+      const { pattern, answer, idx } = generatePattern();
+      currentAnswer = answer;
+
+      const display = pattern.map((val, i) => i === idx ? '___' : val);
+      document.getElementById("pattern").innerText = "Pattern: " + display.join(', ');
+
+      document.getElementById("status").innerText = `Level ${level} | Lives: ${lives} | Flags: ${flags.length}`;
+      document.getElementById("perkInfo").innerText = perk1337 ? `1337 Perk ACTIVE | Boosts: ${boost} | Graces: ${errorFreeGraces} | Hits left: ${hitsLeft}` : '';
     }
-  }
 
-  function aiWins() {
-    alert("💻 AI solved the pattern before you!\nGAME OVER.");
-    endGame("AI won the round.");
-  }
+    function activate1337() {
+      if (!perk1337 && flags.length >= 25) {
+        perk1337 = true;
+        boost = 1;
+        errorFreeGraces = 3;
+        lives = 3;
+        hitsPerLife = 7;
+        hitsLeft = 7;
+        flags.splice(0, 25);
+        alert("🔥 1337 Perk Activated! 1 boost, 3 error-free graces, 3 lives, 7 hits per life.");
+      }
+    }
 
-  function generateFlag(player = 1) {
-    const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const flag = `FLAG{LEVEL_${level}_${suffix}}`;
-    if (mode === 'P2') {
-      if (player === 1) {
-        flagsP1++;
+    function submitAnswer() {
+      const userInput = document.getElementById("answerInput").value.trim();
+      if (userInput.toLowerCase() === 'q') return quitGame("Game Quit");
+
+      const inputVal = parseInt(userInput);
+      if (isNaN(inputVal)) return alert("Invalid input. Please enter a number or 'q'.");
+
+      if (inputVal === currentAnswer) {
+        const flag = generateFlag();
+        flags.push(flag);
+        alert("✅ Correct! FLAG UNLOCKED: " + flag);
+        level++;
+        if (level > 255) return quitGame("MAX LEVEL REACHED");
+        nextLevel();
       } else {
-        flagsP2++;
-      }
-    } else {
-      flags.push(flag);
-    }
-    localStorage.setItem("flags", JSON.stringify(flags));
-    return flag;
-  }
-
-  function checkAnswer(player) {
-    if (winner) return;
-    if (mode === 'P1' && player !== 1) return;
-    if (mode === 'AIopponent' && player !== 1) return;
-    if (mode === 'P2' && !(player === 1 || player === 2)) return;
-    let userVal;
-    if (player === 1) userVal = parseInt(document.getElementById('userInputP1').value);
-    else if (player === 2) userVal = parseInt(document.getElementById('userInputP2').value);
-    const result = document.getElementById("result");
-    const flag = document.getElementById("flagDisplay");
-    if (userVal === correctAnswer) {
-      winner = `Player ${player}`;
-      result.textContent = `✅ ${winner} Correct!`;
-      result.style.color = "#00FF00";
-      const newFlag = generateFlag(player);
-      flag.textContent = `🎉 FLAG UNLOCKED: ${newFlag}`;
-      if (mode === 'AIopponent') {
-        clearTimeout(aiTimeout);
-        clearInterval(aiInterval);
-        document.getElementById("aiProgressBar").style.width = "0%";
-        document.getElementById("aiProgressLabel").textContent = "";
-      }
-      if (mode === 'P2') {
-        if (player === 1) {
-          livesP1 = livesP1 === Infinity ? Infinity : livesP1;
-        } else {
-          livesP2 = livesP2 === Infinity ? Infinity : livesP2;
-        }
-      }
-      level++;
-      updateUI();
-      setTimeout(() => {
-        winner = null;
-        if (mode === 'P2') {
-          document.getElementById("userInputP1").value = "";
-          document.getElementById("userInputP2").value = "";
-        } else {
-          document.getElementById("userInputP1").value = "";
-        }
-        getPattern();
-      }, 2000);
-    } else {
-      result.textContent = `❌ Player ${player} Incorrect.`;
-      result.style.color = "red";
-      if (mode === 'P2') {
-        if (player === 1 && livesP1 !== Infinity) livesP1--;
-        if (player === 2 && livesP2 !== Infinity) livesP2--;
-        updateUI();
-        if ((livesP1 === 0 && player === 1) || (livesP2 === 0 && player === 2)) {
-          endGame(`Player ${player} is out of lives!`);
-        }
-      } else {
-        if (lives !== Infinity) {
-          lives--;
-          updateUI();
-          if (lives === 0) {
-            endGame("No more lives!");
+        alert(`❌ Incorrect. The answer was ${currentAnswer}`);
+        if (perk1337) {
+          if (errorFreeGraces > 0) {
+            errorFreeGraces--;
+            alert(`Grace used! Graces left: ${errorFreeGraces}`);
+          } else {
+            hitsLeft--;
+            if (hitsLeft <= 0) {
+              lives--;
+              if (lives <= 0) return quitGame("Game Over");
+              hitsLeft = hitsPerLife;
+            }
           }
+        } else {
+          lives--;
+          if (lives <= 0) return quitGame("Game Over");
         }
+        nextLevel();
       }
     }
-  }
 
-  function quitGame() {
-    clearInterval(timerInterval);
-    clearTimeout(aiTimeout);
-    clearInterval(aiInterval);
-    endGame("quit game");
-  }
-
-  function endGame(message) {
-    clearInterval(timerInterval);
-    clearTimeout(aiTimeout);
-    clearInterval(aiInterval);
-    let totalPoints = 0;
-    if (mode === 'P2') {
-      totalPoints = (flagsP1 + flagsP2) * 10 * multiplier;
-      alert(`${message}\nP1 Flags: ${flagsP1}\nP2 Flags: ${flagsP2}\nPoints: ${totalPoints}`);
-    } else {
-      totalPoints = flags.length * 10 * multiplier;
-      alert(`${message}\nFlags: ${flags.length}\nPoints: ${totalPoints}`);
+    function generatePattern() {
+      const isGeo = level % 2 === 0;
+      const start = Math.floor(Math.random() * 5) + 2;
+      const step = Math.floor(Math.random() * 4) + 2 + Math.floor(level / 10);
+      const length = Math.min(6 + Math.floor(level / 10), 10);
+      const seq = [start];
+      for (let i = 1; i < length; i++) {
+        seq.push(isGeo ? seq[i - 1] * step : seq[i - 1] + step);
+      }
+      const idx = Math.floor(Math.random() * (length - 2)) + 1;
+      return { pattern: seq, answer: seq[idx], idx };
     }
-    document.getElementById("gameScreen").classList.add("hidden");
-    document.getElementById("startScreen").classList.remove("hidden");
-    document.getElementById("aiProgressBar").style.width = "0%";
-    document.getElementById("aiProgressLabel").textContent = "";
-    document.getElementById("aiProgressContainer").style.display = "none";
-  }
 
-  function bindEnterEvents() {
-    const inputP1 = document.getElementById('userInputP1');
-    if (inputP1) {
-      inputP1.onkeydown = function(e) { if (e.key === 'Enter') checkAnswer(1); };
+    function generateFlag() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let suffix = '';
+      for (let i = 0; i < 4; i++) suffix += chars[Math.floor(Math.random() * chars.length)];
+      return `FLAG-L${level}-${suffix}`;
     }
-    const inputP2 = document.getElementById('userInputP2');
-    if (inputP2) {
-      inputP2.onkeydown = function(e) { if (e.key === 'Enter') checkAnswer(2); };
+
+    function quitGame(msg) {
+      alert(`${msg}\nTotal Flags: ${flags.length}\nTotal Points: ${flags.length * 10 * multiplier}`);
+      running = false;
+      location.reload();
     }
-  }
-
-  startClock();
-  // Make sure Enter key triggers are set on first load as well
-  document.addEventListener('DOMContentLoaded', bindEnterEvents);
-
-</script>
+  </script>
 </body>
 </html>
