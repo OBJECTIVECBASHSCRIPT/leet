@@ -46,6 +46,8 @@
       document.getElementById("intro").style.display = 'none';
       document.getElementById("game").style.display = 'block';
       nextLevel();
+      // Focus the input when the game starts
+      document.getElementById("answerInput").focus();
     }
 
     function nextLevel() {
@@ -62,6 +64,9 @@
 
       document.getElementById("status").innerText = `Level ${level} | Lives: ${lives} | Flags: ${flags.length}`;
       document.getElementById("perkInfo").innerText = perk1337 ? `1337 Perk ACTIVE | Boosts: ${boost} | Graces: ${errorFreeGraces} | Hits left: ${hitsLeft}` : '';
+      // Clear and focus the input for every new level
+      document.getElementById("answerInput").value = '';
+      document.getElementById("answerInput").focus();
     }
 
     function activate1337() {
@@ -138,6 +143,18 @@
       running = false;
       location.reload();
     }
+
+    // Add this event listener to make "Enter" key submit the answer
+    document.addEventListener('DOMContentLoaded', () => {
+      const answerInput = document.getElementById('answerInput');
+      if (answerInput) {
+        answerInput.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            submitAnswer();
+          }
+        });
+      }
+    });
   </script>
 </body>
 </html>
