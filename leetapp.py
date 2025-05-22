@@ -20,14 +20,14 @@ class LeetGame:
         print("leet: h4x0r edition")
         while self.running:
             # Offer to activate 1337 perk if available
-            if not self.perk_1337 and len(self.flags) >= 5:
-                choice = input("Activate 1337 perk for 5 flags? (y/n): ").strip().lower()
+            if not self.perk_1337 and len(self.flags) >= 25:
+                choice = input("Activate 1337 perk for 25 flags? (y/n): ").strip().lower()
                 if choice == 'y':
                     self.activate_1337_perk()
             self.play_level()
 
     def activate_1337_perk(self):
-        if not self.perk_1337 and len(self.flags) >= 5:
+        if not self.perk_1337 and len(self.flags) >= 25:
             self.perk_1337 = True
             self.boost = 1
             self.error_free_graces = 3
